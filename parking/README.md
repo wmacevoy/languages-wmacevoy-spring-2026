@@ -5,24 +5,40 @@ A small full-stack example with HTML/CSS/JS frontend, Node + Express API, and Po
 ## Quick start (Docker)
 
 ```sh
+docker compose down -v
 docker compose up --build
 ```
 
 Then open `http://localhost:3000`.
 
+## Default users
+
+- Root user (all roles): `root` / `rootpass`
+- Sensor user (North Deck): `sensor/north` / `sensorpass`
+- Guests have no role and only see the customer view.
+
+Admins can create/delete users. Sensors should be assigned to a lot (often named like `sensor/<lot>`).
+
 ## API endpoints
 
 - `GET /api/lots` — list all lots with availability
 - `GET /api/lots/:id` — get a single lot
+- `POST /api/login` — login and receive JWT
+- `GET /api/me` — current user from JWT
 - `POST /api/lots/:id/open` — admin opens a lot
 - `POST /api/lots/:id/close` — admin closes a lot
-- `POST /api/lots/:id/occupancy` — sensor updates occupancy
+- `POST /api/lots/:id/occupancy` — sensor updates occupancy for their lot
   - JSON body: `{ "occupancy": 42 }`
+- `GET /api/users` — admin list users
+- `POST /api/users` — admin create user
+- `DELETE /api/users/:id` — admin delete user
 
 ## Notes
 
 - The database is seeded from `server/sql/init.sql` on first run.
+- If you already ran the stack before, reset the database with `docker compose down -v`.
 - The frontend is served from `server/public` by the Node app.
+- JWT secret is configured in `docker-compose.yml` (change for real use).
 
 
 ## Codex Prompt

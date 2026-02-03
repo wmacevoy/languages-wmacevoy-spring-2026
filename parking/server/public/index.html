@@ -36,7 +36,37 @@
           <div id="lot-list" class="lot-list"></div>
         </div>
 
-        <div class="panel">
+        <div class="panel" id="auth-panel">
+          <div class="panel-header">
+            <h2>Login</h2>
+            <p>Admins and sensors sign in to manage lots.</p>
+          </div>
+          <form id="login-form" class="stack">
+            <label>
+              <span>Username</span>
+              <input id="login-username" type="text" autocomplete="username" />
+            </label>
+            <label>
+              <span>Password</span>
+              <input
+                id="login-password"
+                type="password"
+                autocomplete="current-password"
+              />
+            </label>
+            <button type="submit" class="primary">Sign In</button>
+          </form>
+          <div class="auth-meta">
+            <div>
+              <p class="status-label">Current User</p>
+              <p id="current-user" class="status">Guest</p>
+            </div>
+            <button id="logout" class="ghost" type="button" hidden>Logout</button>
+          </div>
+          <p id="login-status" class="status"></p>
+        </div>
+
+        <div class="panel" id="admin-panel" hidden>
           <div class="panel-header">
             <h2>Admin Console</h2>
             <p>Open or close parking areas.</p>
@@ -58,7 +88,7 @@
           <p id="admin-status" class="status"></p>
         </div>
 
-        <div class="panel">
+        <div class="panel" id="sensor-panel" hidden>
           <div class="panel-header">
             <h2>Sensor Update</h2>
             <p>Push occupancy counts for a lot.</p>
@@ -75,6 +105,38 @@
             <button type="submit" class="primary">Send Update</button>
           </form>
           <p id="sensor-status" class="status"></p>
+        </div>
+
+        <div class="panel" id="users-panel" hidden>
+          <div class="panel-header">
+            <h2>User Management</h2>
+            <p>Admins create or remove users.</p>
+          </div>
+          <form id="user-form" class="stack">
+            <label>
+              <span>Username</span>
+              <input id="user-username" type="text" placeholder="sensor/2" />
+            </label>
+            <label>
+              <span>Password</span>
+              <input id="user-password" type="password" />
+            </label>
+            <label>
+              <span>Role</span>
+              <select id="user-role">
+                <option value="none">None</option>
+                <option value="sensor">Sensor</option>
+                <option value="admin">Admin</option>
+              </select>
+            </label>
+            <label id="user-lot-row">
+              <span>Sensor Lot</span>
+              <select id="user-lot"></select>
+            </label>
+            <button type="submit" class="primary">Create User</button>
+          </form>
+          <div class="user-list" id="user-list"></div>
+          <p id="user-status" class="status"></p>
         </div>
       </section>
     </main>
