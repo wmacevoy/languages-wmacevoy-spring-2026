@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Parking Occupancy Demo</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <main class="page">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">City Parking</p>
+          <h1>Live Parking Availability</h1>
+          <p class="subtitle">
+            Customers see open lots and live availability. Admins open/close lots.
+            Sensors update occupancy.
+          </p>
+        </div>
+        <div class="meta">
+          <div class="meta-card">
+            <span class="meta-label">Last Refresh</span>
+            <span id="last-updated">--</span>
+          </div>
+          <button id="refresh" class="ghost">Refresh Now</button>
+        </div>
+      </header>
+
+      <section class="grid">
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Customer View</h2>
+            <p>Open lots with available spaces.</p>
+          </div>
+          <div id="lot-list" class="lot-list"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Admin Console</h2>
+            <p>Open or close parking areas.</p>
+          </div>
+          <form id="admin-form" class="stack">
+            <label>
+              <span>Lot</span>
+              <select id="admin-lot"></select>
+            </label>
+            <div class="button-row">
+              <button type="button" data-action="open" class="primary">
+                Open Lot
+              </button>
+              <button type="button" data-action="close" class="danger">
+                Close Lot
+              </button>
+            </div>
+          </form>
+          <p id="admin-status" class="status"></p>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">
+            <h2>Sensor Update</h2>
+            <p>Push occupancy counts for a lot.</p>
+          </div>
+          <form id="sensor-form" class="stack">
+            <label>
+              <span>Lot</span>
+              <select id="sensor-lot"></select>
+            </label>
+            <label>
+              <span>Occupancy</span>
+              <input id="sensor-occupancy" type="number" min="0" value="0" />
+            </label>
+            <button type="submit" class="primary">Send Update</button>
+          </form>
+          <p id="sensor-status" class="status"></p>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
