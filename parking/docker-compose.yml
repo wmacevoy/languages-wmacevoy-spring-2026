@@ -17,6 +17,7 @@ services:
     build: ./server
     environment:
       DATABASE_URL: postgres://parking_user:parking_pass@db:5432/parking
+      JWT_SECRET: demo-secret-change-me
       PORT: 3000
     depends_on:
       - db
