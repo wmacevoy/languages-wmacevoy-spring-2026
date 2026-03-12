@@ -1,0 +1,12 @@
+{
+  "name": "prolog-solid",
+  "version": "2.0.0",
+  "description": "Prolog interpreter in JS with SolidJS reactive bindings — tic-tac-toe and text adventure demos",
+  "type": "module",
+  "scripts": {
+    "test": "node --test src/prolog-engine.test.js",
+    "serve": "npx serve . -p 3000"
+  },
+  "keywords": ["prolog", "solidjs", "reactive", "unification", "text-adventure", "tic-tac-toe"],
+  "license": "MIT"
+}

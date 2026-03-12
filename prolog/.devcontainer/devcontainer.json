@@ -1,0 +1,13 @@
+{
+  "name": "Prolog + SolidJS",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "postCreateCommand": "npm install",
+  "forwardPorts": [3000],
+  "customizations": {
+    "vscode": {
+      "settings": { "editor.tabSize": 2, "editor.formatOnSave": true },
+      "extensions": ["dbaeumer.vscode-eslint"]
+    }
+  },
+  "remoteUser": "node"
+}
