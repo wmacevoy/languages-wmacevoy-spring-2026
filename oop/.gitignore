@@ -1,0 +1,16 @@
+# Tooling
+.claude/
+
+# C++
+cpp/games
+
+# Rust
+rust/target/
+rust/Cargo.lock
+
+# Python
+python/__pycache__/
+*.pyc
+
+# Kotlin
+kotlin/games.jar

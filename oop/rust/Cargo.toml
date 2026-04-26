@@ -1,0 +1,7 @@
+[package]
+name = "games"
+version = "0.1.0"
+edition = "2021"
+
+# No external dependencies: we implement a tiny xorshift RNG ourselves so
+# the example is self-contained. In real Rust code you'd pull in `rand`.
