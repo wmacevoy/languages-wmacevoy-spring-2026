@@ -199,3 +199,7 @@ Rust's signature is the most informative — it makes the trait-object boundary 
 5. **Boilerplate per concept varies a lot.** A move type costs ~1 line in Rust/Python/Kotlin but ~3 in C++ (and more if you want equality). A strategy class costs ~5 lines in Python/Kotlin and ~10 in C++/Rust.
 
 If you read only one file in each language to feel the contrast, read the `Game` declaration and the `runGame` function — those carry the language's signature most clearly.
+
+## Further reading
+
+[`philosophy.md`](philosophy.md) — a short essay on where OO stands in modern software (object-shards, lazy flyweights, dispatch as the part worth keeping) and what's worth telling a student about it.
