@@ -10,12 +10,14 @@ Python idiom notes:
       programmer does. Contrast with C++ templates and Rust associated
       types, which *force* the compiler to agree on a Move type.
     - enum.Enum gives us a rich enum for free.
+    - apply_move returns an Undo token; undo_move reverts. This lets a
+      search algorithm explore the game tree by mutating one game in place
+      instead of cloning at every node — much cheaper than deepcopy.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from enum import Enum
 from typing import List, Optional, Sequence
 
@@ -37,14 +39,21 @@ class Game(ABC):
 
     Subclasses use whatever Move type they like — a tuple, a dataclass,
     a bare int. The engine never peeks at Move internals; it only asks
-    the game to produce and consume them.
+    the game to produce and consume them. apply_move returns an Undo
+    token of whatever shape the subclass needs; undo_move(undo) must
+    restore the exact prior state.
     """
 
     @abstractmethod
     def legal_moves(self) -> Sequence: ...
 
     @abstractmethod
-    def apply_move(self, move) -> None: ...
+    def apply_move(self, move):
+        """Apply move; return an undo token usable by undo_move()."""
+
+    @abstractmethod
+    def undo_move(self, undo) -> None:
+        """Revert the most recent apply_move using its returned token."""
 
     @abstractmethod
     def current_side(self) -> Side: ...
@@ -56,6 +65,16 @@ class Game(ABC):
     def winner(self) -> Optional[Side]: ...
 
     @abstractmethod
+    def state_key(self) -> int:
+        """Compact, collision-free integer encoding of the current game state.
+
+        Used by search algorithms as a transposition-table key. Must be
+        cheap to compute (no string formatting) and must distinguish any
+        two reachable states whose optimal value could differ — which
+        means including the side to move.
+        """
+
+    @abstractmethod
     def render(self) -> str: ...
 
     @abstractmethod
@@ -63,7 +82,12 @@ class Game(ABC):
 
 
 class Player(ABC):
-    """Strategy: sees a Game, returns a move."""
+    """Strategy: sees a Game (mutably), returns a move.
+
+    A strategy MAY mutate the game during search, but MUST leave it in
+    the same state on return. RandomPlayer never mutates; OptimalPlayer
+    does apply/undo inside its search.
+    """
 
     @abstractmethod
     def choose_move(self, game: Game): ...

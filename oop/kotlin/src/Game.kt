@@ -1,8 +1,11 @@
 // Game + Player interfaces and the engine loop.
 //
 // Kotlin idiom notes:
-//   - `interface Game<M>` is the natural fit. Kotlin generics map closely
-//     to Java's, but the syntax is lighter and there are no raw types.
+//   - `interface Game<M, U>` carries TWO type parameters: the Move type
+//     (what a player chooses) and the Undo type (what the engine needs
+//     to revert). This is closer to Rust's two associated types on a
+//     trait than to a single generic Java interface — the Undo type is
+//     part of the game's contract, not an internal detail.
 //   - `enum class Side` is more powerful than C++ enums: it can have
 //     methods (we put `other()` and `label` right on it).
 //   - `Side?` is the "winner or none" type — Kotlin's null-safety means
@@ -19,31 +22,38 @@ enum class Side(val label: String) {
     fun other(): Side = if (this == ONE) TWO else ONE
 }
 
-// The Game interface. Each concrete game picks its own Move type via the
-// generic parameter <M>. Compare with Rust's `type Move` associated type;
-// the difference is mostly cosmetic.
-interface Game<M> {
+// The Game interface. M = move type (player-facing), U = undo type
+// (engine-facing). applyMove returns a U; undoMove(u) reverts.
+interface Game<M, U> {
     fun legalMoves(): List<M>
-    fun applyMove(move: M)
+    fun applyMove(move: M): U
+    fun undoMove(undo: U)
 
     fun currentSide(): Side
     fun isOver(): Boolean
     fun winner(): Side?
 
+    // Compact integer key for transposition / memoization. Must include
+    // the side to move and uniquely distinguish reachable states.
+    fun stateKey(): Long
+
     fun render(): String
     fun moveToString(move: M): String
 }
 
-// Strategy: receive a Game, return a move.
-interface Player<M> {
-    fun chooseMove(game: Game<M>): M
+// Strategy: receive a (mutable) Game, return a move. A strategy MAY
+// mutate the game during search but MUST leave it in the same state on
+// return. RandomPlayer never mutates; OptimalPlayer applies+undos.
+interface Player<M, U> {
+    fun chooseMove(game: Game<M, U>): M
     val name: String
 }
 
-// The engine. `<M>` propagates the Move type from the Game to the Players.
-fun <M> runGame(
-    game: Game<M>,
-    players: Pair<Player<M>, Player<M>>,
+// The engine. <M, U> propagate the Move and Undo types from the Game
+// to the Players.
+fun <M, U> runGame(
+    game: Game<M, U>,
+    players: Pair<Player<M, U>, Player<M, U>>,
     verbose: Boolean = true,
 ): Side? {
     if (verbose) println(game.render())

@@ -1,6 +1,6 @@
 #pragma once
 
-// Nim : Game<NimMove>
+// Nim : Game<NimMove, NimUndo>
 //
 // Nim exists in this example specifically to break the "2D grid" assumption
 // baked into TicTacToe and ConnectFour. Its state is a vector of pile sizes,
@@ -9,6 +9,7 @@
 // Rules (normal play): players alternate removing 1+ stones from a single
 // pile. The player who takes the last stone wins.
 
+#include <cstdint>
 #include <sstream>
 
 #include "game.h"
@@ -18,7 +19,13 @@ struct NimMove {
     int count;  // stones to remove (>= 1, <= piles_[pile])
 };
 
-class Nim : public Game<NimMove> {
+struct NimUndo {
+    int                 pile;
+    int                 count;
+    std::optional<Side> prevWinner;
+};
+
+class Nim : public Game<NimMove, NimUndo> {
 public:
     explicit Nim(std::vector<int> piles) : piles_(std::move(piles)) {}
 
@@ -31,18 +38,37 @@ public:
         return moves;
     }
 
-    void applyMove(const NimMove& m) override {
+    NimUndo applyMove(const NimMove& m) override {
+        auto prevWinner = winner_;
         piles_[m.pile] -= m.count;
         // If that took the last stone, the current side wins under normal play.
         bool empty = true;
         for (int v : piles_) if (v > 0) { empty = false; break; }
         if (empty) winner_ = current_;
         current_ = other(current_);
+        return {m.pile, m.count, prevWinner};
+    }
+
+    void undoMove(const NimUndo& undo) override {
+        piles_[undo.pile] += undo.count;
+        winner_  = undo.prevWinner;
+        current_ = other(current_);
     }
 
     Side                currentSide() const override { return current_; }
     bool                isOver() const override      { return winner_.has_value(); }
     std::optional<Side> winner() const override      { return winner_; }
+
+    uint64_t stateKey() const override {
+        // 8 bits per pile (caps each at 255) + side bit on top. Caller
+        // must keep piles.size() <= 7 for u64 fit.
+        uint64_t k = 0;
+        for (size_t i = 0; i < piles_.size(); ++i) {
+            k |= (static_cast<uint64_t>(piles_[i]) & 0xFFu) << (8 * i);
+        }
+        k |= static_cast<uint64_t>(current_ == Side::Two) << (8 * piles_.size());
+        return k;
+    }
 
     std::string render() const override {
         std::ostringstream os;

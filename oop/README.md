@@ -200,6 +200,38 @@ Rust's signature is the most informative — it makes the trait-object boundary 
 
 If you read only one file in each language to feel the contrast, read the `Game` declaration and the `runGame` function — those carry the language's signature most clearly.
 
+## Comparative benchmark
+
+`make bench` builds eleven variants inside a single multi-toolchain Docker image — **gcc/clang × `-O0 -g` / `-O2` / `-O3`**, **Rust debug + release**, **Kotlin**, **CPython**, **PyPy** — and times the Optimal-vs-Optimal search workload (TTT + Nim(3,4,5) + ConnectFour 4×4 need-3) at `--repeat 1` and `--repeat 20`. Differencing those two wall-times separates **process startup** (intercept) from **per-iteration search cost** (slope). The harness also reports build time, deliverable size, and peak resident memory.
+
+Sample run on `aarch64` Linux (Docker on Apple Silicon):
+
+| Variant | Build | Artifact | Startup | Per-iter | × fastest | Max RSS | Notes |
+|---|---:|---:|---:|---:|---:|---:|---|
+| `cpp-gcc-O0g` | 0.41 s | 818 KiB | 2.4 ms | 56.4 ms | 7.3× | 4.7 MiB | Debug iterators + no inlining + spilled regs — the slow native floor.[¹](#footnote-O0) |
+| `cpp-gcc-O2` | 0.75 s | 85 KiB | 0.8 ms | 12.9 ms | 1.7× | 4.7 MiB | Production default; almost everything `-O3` gets at half the build time. |
+| `cpp-gcc-O3` | 1.05 s | 150 KiB | 0.6 ms | 12.7 ms | 1.6× | 4.7 MiB | Extra inlining + auto-vec; marginal win on a recursive search. |
+| `cpp-clang-O0g` | 0.38 s | 689 KiB | 0.9 ms | 56.3 ms | 7.3× | 4.7 MiB | Same story as gcc `-O0`; optimisation level dominates compiler choice. |
+| `cpp-clang-O2` | 0.53 s | 87 KiB | 1.0 ms | 11.3 ms | 1.5× | 4.6 MiB | ~10% ahead of gcc here; LLVM inliner crosses virtual calls well. |
+| `cpp-clang-O3` | 0.57 s | 87 KiB | 0.5 ms | 11.0 ms | 1.4× | 4.7 MiB | Fastest C++ row. Devirtualises through the template+virtual mix. |
+| `rust-debug` | 0.17 s | 4954 KiB | 0.5 ms | 93.0 ms | 12.0× | 2.8 MiB | 12× release: bounds checks live, no inlining, no devirt. Don't ship this. |
+| `rust-release` | 0.15 s | 543 KiB | 0.7 ms | 7.7 ms | 1.0× | 2.8 MiB | Fastest overall. Tight `HashMap`; trait dispatch fully monomorphised. |
+| `kotlin` | 3.11 s | 4866 KiB | 97.7 ms | 18.9 ms | 2.4× | 179.5 MiB | JVM tax is memory + startup, not steady-state. Warmed JIT closes the gap. |
+| `python-cpython` | n/a | 18 KiB | 18.9 ms | 308.6 ms | 39.9× | 18.1 MiB | Bytecode interpreter — every CPython op pays a dispatch tax. |
+| `python-pypy` | n/a | 18 KiB | 332.0 ms | 81.6 ms | 10.6× | 69.4 MiB | Same source, 4× faster. The JIT is the entire difference. |
+
+A few cross-cutting things worth surfacing in class:
+
+- **Optimisation level is the biggest single knob.** `-O0 -g` → `-O3` is a 5× speedup on identical C++ source; Rust debug → release is 12×. That swamps almost every cross-language gap. "C++ is fast" is a half-truth — *optimised* C++ is fast.
+- **Compiler choice within a language is small.** clang `-O3` beats gcc `-O3` by ~16% here; at `-O2` the gap nearly closes.
+- **Rust release narrowly beats clang `-O3`** (7.7 ms vs 11.0 ms). "Rust gives up nothing for safety" is empirically defensible on this code.
+- **JVM tax is memory + startup, not throughput.** Warmed Kotlin is only 2.4× the Rust baseline — but uses **~60× the RAM** and **~140× the startup time**.
+- **PyPy makes Python a different language.** Same source, 4× faster. The JIT is the entire difference.
+- **Memory tells a different story than time.** Native processes here are 3-5 MiB; CPython ~18 MiB; PyPy ~70 MiB; JVM ~180 MiB. The hot loop's data is identical.
+- **Build time has its own personality.** Rust incremental release is the fastest of any toolchain (0.15 s); kotlinc is the slowest (3.1 s) because it pays a JVM startup itself.
+
+<a id="footnote-O0"></a>**¹ Why `-O0 -g` is so slow, beyond "no inlining":** debug-mode STL iterators run bounds and validity checks on every dereference; every local variable lives on the stack instead of in a register; function calls are real `call` instructions with full prologues/epilogues; there's no devirtualisation, so every `virtual` call goes through the vtable; and the unwinding tables for `-g` bloat the binary. Recursive game-tree search amplifies all of these — the inner loop is dominated by what the compiler *didn't* do.
+
 ## Further reading
 
 [`philosophy.md`](philosophy.md) — a short essay on where OO stands in modern software (object-shards, lazy flyweights, dispatch as the part worth keeping) and what's worth telling a student about it.

@@ -16,7 +16,8 @@
 
 .PHONY: docker-test docker-build docker-clean \
         docker-test-cpp docker-test-rust docker-test-python docker-test-kotlin \
-        docker-build-cpp docker-build-rust docker-build-python docker-build-kotlin
+        docker-build-cpp docker-build-rust docker-build-python docker-build-kotlin \
+        bench bench-build bench-clean
 
 docker-test: docker-test-cpp docker-test-rust docker-test-python docker-test-kotlin
 	@echo ""
@@ -58,3 +59,18 @@ docker-build-kotlin:
 
 docker-clean:
 	-docker rmi oop-cpp oop-rust oop-python oop-kotlin 2>/dev/null || true
+
+# Comparative benchmark: builds 6 C++ variants (gcc/clang × O0-g/O2/O3),
+# 2 Rust variants (debug/release), Kotlin, and runs Python under both
+# CPython and PyPy. Times each at --repeat 1 and --repeat N to separate
+# startup from per-iteration cost; reports artifact size + max RSS too.
+#
+# Output is a markdown table on stdout.
+bench: bench-build
+	@docker run --rm oop-bench
+
+bench-build:
+	docker build -t oop-bench -f bench/Dockerfile .
+
+bench-clean:
+	-docker rmi oop-bench 2>/dev/null || true

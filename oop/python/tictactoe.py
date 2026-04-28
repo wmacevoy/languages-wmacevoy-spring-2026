@@ -1,9 +1,12 @@
 """TicTacToe concrete game.
 
 Python idiom notes:
-    - We use @dataclass(frozen=True) for the Move — gives us a value type
+    - We use @dataclass(frozen=True) for both Move and Undo — value types
       with equality and hashing for free.
     - The board is a flat list of 9 chars. No Board class; a list is enough.
+    - The Undo token captures only the bits apply_move changes: which cell
+      was filled, and what the winner field was before. current_side flips
+      back via .other() — no need to record it.
 """
 
 from __future__ import annotations
@@ -18,6 +21,12 @@ from game import Game, Side
 class TicTacToeMove:
     row: int
     col: int
+
+
+@dataclass(frozen=True)
+class TicTacToeUndo:
+    cell: int                 # 0..8 — flat index into the board
+    prev_winner: Optional[Side]
 
 
 class TicTacToe(Game):
@@ -45,10 +54,18 @@ class TicTacToe(Game):
                 for r in range(3) for c in range(3)
                 if self._cells[r * 3 + c] == " "]
 
-    def apply_move(self, move: TicTacToeMove) -> None:
-        self._cells[move.row * 3 + move.col] = self._mark(self._current)
+    def apply_move(self, move: TicTacToeMove) -> TicTacToeUndo:
+        cell = move.row * 3 + move.col
+        prev_winner = self._winner
+        self._cells[cell] = self._mark(self._current)
         if self._check_win_at(move.row, move.col):
             self._winner = self._current
+        self._current = self._current.other()
+        return TicTacToeUndo(cell, prev_winner)
+
+    def undo_move(self, undo: TicTacToeUndo) -> None:
+        self._cells[undo.cell] = " "
+        self._winner = undo.prev_winner
         self._current = self._current.other()
 
     def current_side(self) -> Side:
@@ -59,6 +76,15 @@ class TicTacToe(Game):
 
     def winner(self) -> Optional[Side]:
         return self._winner
+
+    def state_key(self) -> int:
+        # 9 cells * 2 bits + 1 side bit = 19 bits total. Empty=0, X=1, O=2.
+        k = 0
+        for i, ch in enumerate(self._cells):
+            v = 0 if ch == " " else (1 if ch == "X" else 2)
+            k |= v << (2 * i)
+        k |= (0 if self._current is Side.ONE else 1) << 18
+        return k
 
     def render(self) -> str:
         out = []
